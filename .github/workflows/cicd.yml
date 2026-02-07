@@ -16,8 +16,21 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-test-push:
-    runs-on: ubuntu-latest
+  build-bases:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            tag-suffix: amd64
+            
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64,linux/arm/v7
+            tag-suffix: arm64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -28,9 +41,6 @@ jobs:
           VERSION=$(grep "ARG IPERF3_VERSION=" Dockerfile | cut -d'=' -f2 | tr -d '[:space:]')
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "version: $VERSION"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,16 +53,18 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and load (AMD64 only)
+        if: matrix.platform == 'linux/amd64'
         uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           platforms: linux/amd64
           tags: local-test:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.tag-suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
 
       - name: Run Trivy vulnerability scanner
+        if: matrix.platform == 'linux/amd64'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'local-test:latest'
@@ -63,12 +75,13 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results
+        if: always() && matrix.platform == 'linux/amd64'
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Check Trivy Break Build
+        if: matrix.platform == 'linux/amd64'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'local-test:latest'
@@ -78,16 +91,52 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Build and push Multi-Arch
+      - name: Build and Push Temp Image
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: ${{ matrix.platform }}
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}
-            ${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ env.IMAGE_NAME }}:build-${{ github.run_id }}-${{ matrix.tag-suffix }}
+          cache-from: type=gha,scope=${{ matrix.tag-suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
+
+  merge-tags:
+    needs: build-bases
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract Version from Dockerfile
+        id: get_version
+        run: |
+          VERSION=$(grep "ARG IPERF3_VERSION=" Dockerfile | cut -d'=' -f2 | tr -d '[:space:]')
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version: $VERSION"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create Manifest and Push
+        run: |
+          SOURCE_AMD64="${{ env.IMAGE_NAME }}:build-${{ github.run_id }}-amd64"
+          SOURCE_ARM64="${{ env.IMAGE_NAME }}:build-${{ github.run_id }}-arm64"
+          
+          TAG_LATEST="${{ env.IMAGE_NAME }}:latest"
+          TAG_VER="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}"
+          TAG_FULL="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-${{ github.sha }}"
+          
+          docker buildx imagetools create -t $TAG_LATEST -t $TAG_VER -t $TAG_FULL \
+            $SOURCE_AMD64 \
+            $SOURCE_ARM64
+            
+          echo "🎉 Successfully merged and pushed $TAG_VER with ARMv7 support"
