@@ -152,6 +152,6 @@ jobs:
           
           TAG_LATEST="${{ env.IMAGE_NAME }}:latest"
           TAG_VER="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}"
-          TAG_FULL="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-${{ github.sha }}"
+          TAG_FULL="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-${GITHUB_SHA::7}"
           
           docker buildx imagetools create -t $TAG_LATEST -t $TAG_VER -t $TAG_FULL $DIGESTS
