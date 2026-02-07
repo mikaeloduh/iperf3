@@ -110,7 +110,7 @@ jobs:
           
       - name: Upload Digest
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: digests-${{ matrix.tag-suffix }}
           path: /tmp/digests/*
@@ -131,7 +131,7 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Download Digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: digests-*
           path: /tmp/digests
