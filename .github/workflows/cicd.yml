@@ -5,12 +5,12 @@ on:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
-      - .github/workflows/dockerhub-description.yml
+      - '.github/workflows/dockerhub-description.yml'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
       - 'README.md'
-      - .github/workflows/dockerhub-description.yml
+      - '.github/workflows/dockerhub-description.yml'
   workflow_dispatch:
 
 permissions:
