@@ -174,7 +174,9 @@ jobs:
           
           docker buildx imagetools create -t $TAG_LATEST -t $TAG_VER -t $TAG_FULL $DIGESTS
           
-          FINAL_DIGEST=$(docker buildx imagetools inspect $TAG_LATEST --format '{{.Manifest.Digest}}')
+          FINAL_DIGEST=$(docker buildx imagetools inspect $TAG_LATEST | grep "^Digest:" | awk '{print $2}')
+          
+          echo "Captured Digest: $FINAL_DIGEST"
           echo "FINAL_DIGEST=$FINAL_DIGEST" >> $GITHUB_ENV
 
       - name: Sign the published Docker image
