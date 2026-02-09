@@ -36,3 +36,19 @@ services:
       - "5201:5201/udp"
       - "5201:5201/tcp"
 ```
+
+## Attestations
+
+This image is signed via Sigstore Keyless (OIDC), with SLSA Provenance & SBOMs attached as OCI 1.1 Referrers.
+
+Issuer:
+
+```
+https://token.actions.githubusercontent.com
+```
+
+Subject (Regexp):
+
+```
+^https://github\.com/mikaeloduh/iperf3/.+
+```
