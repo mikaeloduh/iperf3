@@ -182,4 +182,4 @@ jobs:
       - name: Sign the published Docker image
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
-          cosign sign --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
+          cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
