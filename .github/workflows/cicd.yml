@@ -182,6 +182,8 @@ jobs:
           echo "FINAL_DIGEST=$FINAL_DIGEST" >> $GITHUB_ENV
 
       - name: Sign the published Docker image
+        env:
+          COSIGN_EXPERIMENTAL: "1"
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
           cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
