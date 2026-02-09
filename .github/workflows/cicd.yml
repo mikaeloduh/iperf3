@@ -141,8 +141,6 @@ jobs:
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.0.0
-        with:
-          cosign-release: 'v3.0.4'
 
       - name: Extract Version
         run: |
@@ -187,3 +185,10 @@ jobs:
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
           cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
+
+      - name: Verify signature
+        run: |
+          cosign verify \
+            --certificate-identity-regexp "^https://github\.com/${{ github.repository }}/.+" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
