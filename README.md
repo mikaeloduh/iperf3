@@ -1,4 +1,4 @@
-# [iperf3](https://github.com/mikaeloduh/iperf3)
+# iperf3
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/mikaeloduh/iperf3/cicd.yml?branch=master&label=Build&logo=github)](https://github.com/mikaeloduh/iperf3/actions)
 [![Trivy Scan](https://img.shields.io/github/actions/workflow/status/mikaeloduh/iperf3/cicd.yml?branch=master&label=Trivy%20Scan&logo=trivy)](https://github.com/mikaeloduh/iperf3/actions/workflows/cicd.yml)
