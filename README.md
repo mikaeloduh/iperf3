@@ -37,9 +37,9 @@ services:
       - "5201:5201/tcp"
 ```
 
-## Attestations
+## Signatures & Attestations
 
-This image is signed via Sigstore Keyless (OIDC), with SLSA Provenance & SBOMs attached as OCI 1.1 Referrers.
+This image is signed via **Sigstore Keyless (OIDC)**, with **SLSA Provenance** and **SBOM** attached as **OCI 1.1 Referrers**.
 
 Issuer:
 
