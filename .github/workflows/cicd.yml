@@ -2,11 +2,11 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ 'master' ]
     paths-ignore:
       - README.md
   pull_request:
-    branches: [ "master" ]
+    branches: [ 'master' ]
     paths-ignore:
       - README.md
   workflow_dispatch:
@@ -101,7 +101,7 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          provenance: mode=max
+          provenance: 'mode=max,version=v1'
           sbom: true
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.tag-suffix }}
@@ -179,14 +179,33 @@ jobs:
 
       - name: Sign the published Docker image
         env:
-          COSIGN_EXPERIMENTAL: "1"
+          COSIGN_EXPERIMENTAL: '1'
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
           cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
 
       - name: Verify signature
         run: |
+          IDENTITY_REGEXP="^https://github\.com/${{ github.repository }}/.+"
+          ISSUER="https://token.actions.githubusercontent.com"
+          IMAGE="${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
+          
+          echo "Verifying image signature..."
           cosign verify \
-            --certificate-identity-regexp "^https://github\.com/${{ github.repository }}/.+" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
+            --certificate-identity-regexp $IDENTITY_REGEXP \
+            --certificate-oidc-issuer $ISSUER \
+            $IMAGE
+
+          echo "Verifying SLSA provenance attestation..."
+          cosign verify-attestation \
+            --type https://slsa.dev/provenance/v1 \
+            --certificate-identity-regexp=$IDENTITY_REGEXP \
+            --certificate-oidc-issuer=$ISSUER \
+            $IMAGE
+
+          echo "Verifying SBOM attestation..."
+          cosign verify-attestation \
+            --type https://spdx.dev/Document \
+            --certificate-identity-regexp=$IDENTITY_REGEXP \
+            --certificate-oidc-issuer=$ISSUER \
+            $IMAGE
