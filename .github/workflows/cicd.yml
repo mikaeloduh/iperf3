@@ -4,11 +4,11 @@ on:
   push:
     branches: [ 'master' ]
     paths-ignore:
-      - README.md
+      - 'README.md'
   pull_request:
     branches: [ 'master' ]
     paths-ignore:
-      - README.md
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +16,7 @@ permissions:
   packages: write
   security-events: write
   id-token: write
+  attestations: write
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -62,7 +63,7 @@ jobs:
           context: .
           load: true
           platforms: linux/amd64
-          tags: local-test:latest
+          tags: 'local-test:latest'
           cache-from: type=gha,scope=${{ matrix.tag-suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
 
@@ -101,8 +102,8 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          provenance: 'mode=max,version=v1'
-          sbom: true
+          provenance: false
+          sbom: false
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.tag-suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
@@ -132,6 +133,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
@@ -182,9 +184,32 @@ jobs:
           COSIGN_EXPERIMENTAL: '1'
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
+          # 使用 OCI 1.1 模式，保持 Tag 列表乾淨
           cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
 
-      - name: Verify signature
+      - name: Attest Build Provenance (SLSA v1)
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: index.docker.io/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ env.FINAL_DIGEST }}
+          push-to-registry: true
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v3
+        with:
+          subject-name: index.docker.io/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ env.FINAL_DIGEST }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+      - name: Verify signature and attestations
         run: |
           IDENTITY_REGEXP="^https://github\.com/${{ github.repository }}/.+"
           ISSUER="https://token.actions.githubusercontent.com"
@@ -192,20 +217,20 @@ jobs:
           
           echo "Verifying image signature..."
           cosign verify \
-            --certificate-identity-regexp $IDENTITY_REGEXP \
-            --certificate-oidc-issuer $ISSUER \
-            $IMAGE
+            --certificate-identity-regexp "$IDENTITY_REGEXP" \
+            --certificate-oidc-issuer "$ISSUER" \
+            "$IMAGE"
 
           echo "Verifying SLSA provenance attestation..."
           cosign verify-attestation \
             --type https://slsa.dev/provenance/v1 \
-            --certificate-identity-regexp=$IDENTITY_REGEXP \
-            --certificate-oidc-issuer=$ISSUER \
-            $IMAGE
-
+            --certificate-identity-regexp "$IDENTITY_REGEXP" \
+            --certificate-oidc-issuer "$ISSUER" \
+            "$IMAGE"
+          
           echo "Verifying SBOM attestation..."
           cosign verify-attestation \
             --type https://spdx.dev/Document \
-            --certificate-identity-regexp=$IDENTITY_REGEXP \
-            --certificate-oidc-issuer=$ISSUER \
-            $IMAGE
+            --certificate-identity-regexp "$IDENTITY_REGEXP" \
+            --certificate-oidc-issuer "$ISSUER" \
+            "$IMAGE"
