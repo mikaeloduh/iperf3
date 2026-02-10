@@ -184,7 +184,6 @@ jobs:
           COSIGN_EXPERIMENTAL: '1'
         run: |
           echo "Signing image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
-          # 使用 OCI 1.1 模式，保持 Tag 列表乾淨
           cosign sign --registry-referrers-mode oci-1-1 --yes --recursive "${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}"
 
       - name: Attest Build Provenance (SLSA v1)
@@ -198,7 +197,7 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           image: ${{ env.IMAGE_NAME }}@${{ env.FINAL_DIGEST }}
-          format: spdx-json@v2.3
+          format: spdx-json@2.3
           output-file: sbom.spdx.json
 
       - name: Attest SBOM
