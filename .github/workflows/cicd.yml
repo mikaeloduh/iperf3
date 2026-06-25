@@ -58,7 +58,7 @@ jobs:
 
       - name: Build and load (AMD64 only)
         if: matrix.platform == 'linux/amd64'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -98,7 +98,7 @@ jobs:
       - name: Build and Push by Digest
         id: build
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform }}
