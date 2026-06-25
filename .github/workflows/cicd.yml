@@ -43,7 +43,7 @@ jobs:
       - name: Extract Version
         id: get_version
         run: |
-          VERSION=$(grep "ARG IPERF3_VERSION=" Dockerfile | cut -d'=' -f2 | tr -d '[:space:]')
+          VERSION=$(awk '$1 == "iperf3" { print $2; exit }' package_versions.txt)
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
@@ -66,6 +66,12 @@ jobs:
           tags: 'local-test:latest'
           cache-from: type=gha,scope=${{ matrix.tag-suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
+
+      - name: Check package snapshot
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          .github/package-versions/update.sh local-test:latest /tmp/package_versions.txt
+          diff -u package_versions.txt /tmp/package_versions.txt
 
       - name: Run Trivy scanner
         if: matrix.platform == 'linux/amd64'
@@ -144,7 +150,7 @@ jobs:
 
       - name: Extract Version
         run: |
-          VERSION=$(grep "ARG IPERF3_VERSION=" Dockerfile | cut -d'=' -f2 | tr -d '[:space:]')
+          VERSION=$(awk '$1 == "iperf3" { print $2; exit }' package_versions.txt)
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Download Digests

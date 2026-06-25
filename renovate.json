@@ -12,27 +12,10 @@
       "groupName": "alpine base image"
     },
     {
-      "matchDatasources": ["repology"],
-      "groupName": "alpine packages"
-    },
-    {
       "description": "Automatically merge patch version and digest update",
       "matchUpdateTypes": ["patch", "digest"],
       "automerge": true,
       "platformAutomerge": true
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Update iperf3 from the matching Alpine package repository",
-      "managerFilePatterns": ["/^Dockerfile$/"],
-      "matchStrings": [
-        "FROM alpine:(?<alpineVersion>\\d+\\.\\d+)(?:@sha256:[a-f0-9]+)?\\s[\\s\\S]*?ARG IPERF3_VERSION=(?<currentValue>\\S+)"
-      ],
-      "datasourceTemplate": "repology",
-      "depNameTemplate": "alpine_{{{replace '[.]' '_' alpineVersion}}}/iperf3",
-      "versioningTemplate": "loose"
     }
   ]
 }

@@ -1,0 +1,80 @@
+name: Sync package versions
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - Dockerfile
+  schedule:
+    - cron: '37 9 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    if: >-
+      (
+        github.event_name == 'pull_request' &&
+        github.actor == 'renovate[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pull request branch
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Checkout default branch
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          platforms: linux/amd64
+          tags: local-package-check:latest
+
+      - name: Update package snapshot
+        run: .github/package-versions/update.sh local-package-check:latest
+
+      - name: Commit changes to Renovate PR
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --quiet -- package_versions.txt; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package_versions.txt
+          git commit -m "chore(docker): update package versions"
+          git push
+
+      - name: Create package snapshot pull request
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/update-package-versions
+          delete-branch: true
+          title: "chore(docker): update package versions"
+          commit-message: "chore(docker): update package versions"
+          body: |
+            Update `package_versions.txt` from the current Docker image build.
+          add-paths: package_versions.txt
