@@ -213,7 +213,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Attest SBOM
-        uses: actions/attest-sbom@v3
+        uses: actions/attest-sbom@v4
         with:
           subject-name: index.docker.io/${{ env.IMAGE_NAME }}
           subject-digest: ${{ env.FINAL_DIGEST }}
