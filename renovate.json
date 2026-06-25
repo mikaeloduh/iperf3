@@ -25,10 +25,14 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^Dockerfile$"],
+      "description": "Update iperf3 from the matching Alpine package repository",
+      "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)(?: versioning=(?<versioning>.*?))?\\sARG .*?_VERSION=(?<currentValue>.*)\\s"
-      ]
+        "FROM alpine:(?<alpineVersion>\\d+\\.\\d+)(?:@sha256:[a-f0-9]+)?\\s[\\s\\S]*?ARG IPERF3_VERSION=(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "repology",
+      "depNameTemplate": "alpine_{{{replace '[.]' '_' alpineVersion}}}/iperf3",
+      "versioningTemplate": "loose"
     }
   ]
 }
