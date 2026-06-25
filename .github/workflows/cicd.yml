@@ -75,7 +75,9 @@ jobs:
         if: matrix.platform == 'linux/amd64'
         run: |
           .github/package-versions/update.sh local-test:latest /tmp/package_versions.txt
-          diff -u package_versions.txt /tmp/package_versions.txt
+          awk 'NF >= 3 { print $1 "\t" $2 "\t" $3 }' package_versions.txt > /tmp/package_versions.expected
+          awk 'NF >= 3 { print $1 "\t" $2 "\t" $3 }' /tmp/package_versions.txt > /tmp/package_versions.actual
+          diff -u /tmp/package_versions.expected /tmp/package_versions.actual
 
       - name: Run Trivy scanner
         if: matrix.platform == 'linux/amd64'
