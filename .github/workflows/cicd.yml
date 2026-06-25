@@ -67,6 +67,10 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.tag-suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tag-suffix }}
 
+      - name: Install Syft
+        if: matrix.platform == 'linux/amd64'
+        uses: anchore/sbom-action/download-syft@v0
+
       - name: Check package snapshot
         if: matrix.platform == 'linux/amd64'
         run: |

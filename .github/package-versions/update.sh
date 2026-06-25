@@ -5,12 +5,8 @@ image="${1:-local-test:latest}"
 output="${2:-package_versions.txt}"
 tmp_file="$(mktemp)"
 raw_file="$(mktemp)"
-syft_image="${SYFT_IMAGE:-ghcr.io/anchore/syft:latest}"
 
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  "$syft_image" \
-  "$image" -o "table=$raw_file"
+syft "$image" -o table >"$raw_file"
 
 awk '
   NF >= 3 {

@@ -51,6 +51,9 @@ jobs:
           platforms: linux/amd64
           tags: local-package-check:latest
 
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
       - name: Update package snapshot
         run: .github/package-versions/update.sh local-package-check:latest
 
