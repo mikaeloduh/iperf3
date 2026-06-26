@@ -72,7 +72,7 @@ jobs:
 
       - name: Create package snapshot pull request
         if: github.event_name != 'pull_request'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/update-package-versions
           delete-branch: true
