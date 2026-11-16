@@ -4,6 +4,19 @@
     "config:base",
     "docker:pinDigests"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^Dockerfile$/"],
+      "matchStrings": [
+        "FROM alpine:(?<alpineVersion>\\d+\\.\\d+)[^\\n]*[\\s\\S]*?ARG IPERF3_VERSION=(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "apk",
+      "depNameTemplate": "iperf3",
+      "versioningTemplate": "apk",
+      "registryUrlTemplate": "https://dl-cdn.alpinelinux.org/alpine?branch=v{{{alpineVersion}}}&components=main&arch=x86_64"
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": ["docker"],

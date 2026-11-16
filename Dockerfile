@@ -1,10 +1,12 @@
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 
+ARG IPERF3_VERSION=3.20-r0
+
 # Metadata
 LABEL maintainer="mikaeloduh"
 LABEL description="Minimal iperf3 image based on Alpine"
 
-RUN apk add --no-cache iperf3
+RUN apk add --no-cache "iperf3=${IPERF3_VERSION}"
 
 RUN adduser -D -u 1000 iperfuser
 USER iperfuser

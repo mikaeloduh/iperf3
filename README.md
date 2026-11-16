@@ -8,6 +8,12 @@
 
 Minimal iperf3 image based on Alpine
 
+## Dependency Updates
+
+Renovate tracks the Alpine base image tag and digest, and updates `IPERF3_VERSION`
+in the Dockerfile from the matching Alpine release's package repository. CI uses
+`IPERF3_VERSION` for image version tags; no package snapshot sync is required.
+
 ## Supported Architectures
 
 * linux/amd64
